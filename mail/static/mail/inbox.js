@@ -61,7 +61,8 @@ function load_mailbox(mailbox) {
   .then(result =>{
     result.forEach((email) => {
       const element = document.createElement('div');
-    element.classList.add('email-item');
+      element.classList.add('email-item');
+      element.addEventListener('click', () => show_mail(email.id));
 
       if ( email.read === true) {
         element.style.backgroundColor = '#D3D3D3';
@@ -73,7 +74,29 @@ function load_mailbox(mailbox) {
       document.querySelector('#emails-view').append(element);
     })
   })
-
 }
 
+function show_mail(id) {
+    fetch(`/emails/${id}`)
+    .then(response => response.json())
+    .then(result => {
+      const view = document.querySelector('#emails-view')
+      view.innerHTML = '';
+      view.innerHTML = `<div class= email-item>
+      <h3> <strong> Subject: </strong> ${result.subject} </h3> 
+      <hr>
+      <h6> <strong>To: </strong>${result.recipients}</h6> 
+      <br> 
+      <p>${result.body}</p>
+      <h6> <strong>From: </strong>${result.sender}</h6>
+      <p> ${result.timestamp} </p>
+      </div>`;
+    })
 
+    fetch(`/emails/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        read: true
+      })
+    });
+}
