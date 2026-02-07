@@ -48,15 +48,32 @@ function compose_email() {
 }
 
 function load_mailbox(mailbox) {
-  fetch(`/emails/${mailbox}`)
-  .then(response => response.json())
-  .then(result =>{
-    console.log(result)
-  })
+
   // Show the mailbox and hide other views
   document.querySelector('#emails-view').style.display = 'block';
   document.querySelector('#compose-view').style.display = 'none';
 
   // Show the mailbox name
   document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
+
+  fetch(`/emails/${mailbox}`)
+  .then(response => response.json())
+  .then(result =>{
+    result.forEach((email) => {
+      const element = document.createElement('div');
+    element.classList.add('email-item');
+
+      if ( email.read === true) {
+        element.style.backgroundColor = '#D3D3D3';
+      }
+      else {
+        element.style.backgroundColor = "white";
+      }
+      element.innerHTML = `<h2>${email.subject}</h2> <h5>${email.sender}</h5> <p>${email.timestamp}</p>`;
+      document.querySelector('#emails-view').append(element);
+    })
+  })
+
 }
+
+
