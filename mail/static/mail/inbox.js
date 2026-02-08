@@ -62,13 +62,14 @@ function load_mailbox(mailbox) {
     result.forEach((email) => {
       const element = document.createElement('div');
       element.classList.add('email-item');
-      element.addEventListener('click', () => show_mail(email.id));
-
-      if ( email.read === true) {
-        element.style.backgroundColor = '#D3D3D3';
-      }
-      else {
-        element.style.backgroundColor = "white";
+      element.addEventListener('click', () => show_mail(mailbox, email.id));
+      if (mailbox != "sent") {
+        if ( email.read === true) {
+          element.style.backgroundColor = '#D3D3D3';
+        }
+        else {
+          element.style.backgroundColor = "white";
+        }
       }
       element.innerHTML = `<h2>${email.subject}</h2> <h5>${email.sender}</h5> <p>${email.timestamp}</p>`;
       document.querySelector('#emails-view').append(element);
@@ -76,22 +77,55 @@ function load_mailbox(mailbox) {
   })
 }
 
-function show_mail(id) {
+function show_mail(mailbox, id) {
     fetch(`/emails/${id}`)
     .then(response => response.json())
     .then(result => {
       const view = document.querySelector('#emails-view')
       view.innerHTML = '';
-      view.innerHTML = `<div class= email-item>
-      <h3> <strong> Subject: </strong> ${result.subject} </h3> 
-      <hr>
-      <h6> <strong>To: </strong>${result.recipients}</h6> 
-      <br> 
-      <p>${result.body}</p>
-      <h6> <strong>From: </strong>${result.sender}</h6>
-      <p> ${result.timestamp} </p>
+      view.innerHTML = `<div class= "email-item">
+        <h3> <strong> Subject: </strong> ${result.subject} </h3> 
+        <hr>
+        <h6> <strong>To: </strong>${result.recipients}</h6> 
+        <br> 
+        <p>${result.body}</p>
+        <h6> <strong>From: </strong>${result.sender}</h6>
+        <p> ${result.timestamp} </p>
       </div>`;
-    })
+      
+      if (mailbox != 'sent') {
+        const element = document.createElement('div');
+        element.innerHTML = `<div> 
+          <button id="archive"></button>
+          <button id="reply">Reply</button>
+        </div>`
+        document.querySelector('#emails-view').append(element);
+          
+        const archive = document.querySelector("#archive");
+        if (result.archived === false) {
+            archive.innerHTML = 'Archive';
+        }  else {
+            archive.innerHTML ="Unarchive";
+        }
+        archive.addEventListener('click', () => {
+          if (result.archived === false) {
+            archive.innerHTML = 'Unarchive';  
+            fetch(`/emails/${id}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                archived: true
+              })
+            });
+          } else {
+            archive.innerHTML ="Archive";
+            fetch(`/emails/${id}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                archived: false
+              })
+            });
+        };
+    })}
 
     fetch(`/emails/${id}`, {
       method: 'PUT',
@@ -99,4 +133,5 @@ function show_mail(id) {
         read: true
       })
     });
+})
 }
