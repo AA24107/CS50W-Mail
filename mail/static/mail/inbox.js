@@ -32,8 +32,10 @@ function compose_email() {
     .then(response => response.json())
     .then(result => {
       console.log(result);
+    })
+    .then(() => {
+      load_mailbox('sent');
     });
-    load_mailbox('sent');
     return false;
   };
 
@@ -93,20 +95,53 @@ function show_mail(mailbox, id) {
         <p> ${result.timestamp} </p>
       </div>`;
       
-      if (mailbox != 'sent') {
+      if (mailbox !== 'sent') {
         const element = document.createElement('div');
         element.innerHTML = `<div> 
-          <button id="archive"></button>
-          <button id="reply">Reply</button>
+          <button class="archive-btn"></button>
+          <button class="reply-btn">Reply</button>
         </div>`
         document.querySelector('#emails-view').append(element);
+
+        const reply = element.querySelector('.reply-btn')
+        reply.addEventListener('click', () => {
+          document.querySelector('#compose-form').onsubmit =() => {
+          const recipients = document.querySelector("#compose-recipients").value;
+          const subject = document.querySelector("#compose-subject").value;
+          const body = document.querySelector("#compose-body").value;
+
+          fetch("/emails", {
+            method: "POST",
+            body: JSON.stringify({
+              recipients: recipients,
+              subject: subject,
+              body: body,
+            })
+          })
+          .then(response => response.json())
+          .then(result => {
+            console.log(result);
+          })
+          .then(() => {
+            load_mailbox('sent');
+          });
+          return false;
+        };
+          document.querySelector('#emails-view').style.display = 'none';
+          document.querySelector('#compose-view').style.display = 'block';
+
+          if (result.subject.startsWith("Re: ")) {
+            document.querySelector('#compose-subject').value = `${result.subject}`;
+          } else {
+            document.querySelector('#compose-subject').value = `Re: ${result.subject}`;
+          }
+
+          document.querySelector('#compose-recipients').value = `${result.sender}`;
+          document.querySelector('#compose-body').value = `On ${result.timestamp} ${result.sender} wrote: \n ${result.body}`;
+        });  
           
-        const archive = document.querySelector("#archive");
-        if (result.archived === false) {
-            archive.innerHTML = 'Archive';
-        }  else {
-            archive.innerHTML ="Unarchive";
-        }
+        const archive = element.querySelector(".archive-btn");
+        archive.innerHTML = result.archived ? 'Unarchive' : 'Archive';
         archive.addEventListener('click', () => {
           if (result.archived === false) {
             archive.innerHTML = 'Unarchive';  
@@ -115,7 +150,11 @@ function show_mail(mailbox, id) {
               body: JSON.stringify({
                 archived: true
               })
+            })
+            .then(() => {
+              load_mailbox('inbox');
             });
+            return false;
           } else {
             archive.innerHTML ="Archive";
             fetch(`/emails/${id}`, {
@@ -123,9 +162,13 @@ function show_mail(mailbox, id) {
               body: JSON.stringify({
                 archived: false
               })
+            })
+            .then(() => {
+              load_mailbox('inbox');
             });
         };
-    })}
+      }
+    )};
 
     fetch(`/emails/${id}`, {
       method: 'PUT',
